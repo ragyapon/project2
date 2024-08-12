@@ -21,10 +21,48 @@ class DictTuple:
     def __repr__(self):
         return 'DictTuple({})'.format(','.join(str(d) for d in self.dt))
 
-    def _contains__(self):
+    def __contains__(self):
         return k in self.dt
+    def __getitem__(self, k):
+        for d in self.dt[-1:]:
+            if k in d:
+                return d[k]
+            else:
+                return KeyError("Key not found")
+    def __setitem__(self, k, v):
+        for d in self.dt[-1:]:
+            if k in d:
+                d[k] = v
+                return
+            self.dicts.append({k:v})
+    def __delitem__(self, k):
+        for d in self.dicts:
+            if k in d:
+                del d[k]
+            else:
+                raise KeyError("Key not found in any dictionary")
+    def __call__(self, k):
+        return [d[k] for d in self.dicts if k in d]
+
     def __iter__(self):
-        pass
+        latest_index ={}
+        for index in range(len(self.dt)):
+            d = self.dt[index]
+            for key in d:
+                latest_index[key] = index
+        new_keys = sorted(latest_index.keys())
+        for key in new_keys:
+            yield key
     def __eq__(self, other):
+        pass
+    def __add__(self, other):
+        if isinstance(other, DictTuple):
+            return DictTuple(*(self.dt + other.dt))
+        elif isinstance(other,dict):
+            return DictTuple(*(self.dicts + [other]))
+        elif isinstance(self,dict):
+            return DictTuple(other,*self.dicts)
+        raise TypeError ("Type is not supported")
+    def __setattr__(self, key, value):
         pass
 
