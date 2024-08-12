@@ -22,11 +22,7 @@ class DictTuple:
         return 'DictTuple({})'.format(','.join(str(d) for d in self.dt))
 
     def _contains__(self):
-    # if k is in self.dt:
-        #return True
-    #else:
-        #return False
-
+        return k in self.dt
     def __iter__(self):
         pass
     def __eq__(self, other):
