@@ -38,7 +38,8 @@ def mynamedtuple(typename, fieldnames, mutable=False, defaults={}):
                 raise TypeError(f'Missing required argument for field: {field}')
 
     def __repr__(self):
-        return f"{typename}(" + ", ".join(f"{f}={{self.{f}!r}}" for f in self._fields) + ")"
+        field_strs = ', '.join([f"{field}={{self.{field}!r}}" for field in self._fields])
+        return f"{typename}({field_strs.format(self=self)})"
 
     def __str__(self):
         return repr(self)
