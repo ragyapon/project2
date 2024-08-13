@@ -5,47 +5,55 @@
 3.
 """
 
+
 class DictTuple:
-    def __init__(self,*dt):
+    def __init__(self, *dt):
         self.dt = dt
+
     def __len__(self):
         key_counter = 0
         for key in self.dt:
             key_counter += len(key.keys())
         return key_counter
+
     def __bool__(self):
         if len(self.dt) == 1:
             return False
         else:
             return True
+
     def __repr__(self):
         return 'DictTuple({})'.format(','.join(str(d) for d in self.dt))
 
-    def __contains__(self,k):
+    def __contains__(self, k):
         return k in self.dt
+
     def __getitem__(self, k):
         for d in reversed(self.dt):
             if k in d:
                 return d[k]
             else:
                 return KeyError("Key not found")
+
     def __setitem__(self, k, v):
         for d in reversed(self.dt):
             if k in d:
                 d[k] = v
                 return
-            self.dt[-1][k]=v
+            self.dt[-1][k] = v
+
     def __delitem__(self, k):
         for d in self.dt:
             if k in d:
                 del d[k]
             else:
                 raise KeyError("Key not found in any dictionary")
+
     def __call__(self, k):
         return [d[k] for d in self.dt if k in d]
 
     def __iter__(self):
-        latest_index ={}
+        latest_index = {}
         for index in range(len(self.dt)):
             d = self.dt[index]
             for key in d:
@@ -53,6 +61,7 @@ class DictTuple:
         new_keys = sorted(latest_index.keys())
         for key in new_keys:
             yield key
+
     def __eq__(self, other):
         self_keys = set(self.__iter__())
 
@@ -77,14 +86,15 @@ class DictTuple:
             return True
 
         return False
+
     def __add__(self, other):
         if isinstance(other, DictTuple):
             return DictTuple(*(self.dt + other.dt))
-        elif isinstance(other,dict):
+        elif isinstance(self, other):
             return DictTuple(*(self.dt + [other]))
-        elif isinstance(self,dict):
-            return DictTuple(other,*self.dt)
-        raise TypeError ("Type is not supported")
+        elif isinstance(self, other):
+            return DictTuple(other, *self.dt)
+        raise TypeError("Type is not supported")
+
     def __setattr__(self, key, value):
         pass
-
