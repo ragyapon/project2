@@ -91,7 +91,7 @@ def make_namedtuple(namedtuple: Dict[str, Any], values: List[Any]) -> Dict[str, 
     if len(values) != len(namedtuple['field_name']):
         raise ValueError("Number of values does not match the number of fields")
     new_defaults = dict(zip(namedtuple['field_name'], values))
-    return create_namedtuple(namedtuple['type_name'], namedtuple['field_name'], namedtuple['mutable'], new_defaults)
+    return mynamedtuple(namedtuple['type_name'], namedtuple['field_name'], namedtuple['mutable'], new_defaults)
 
 def replace_namedtuple(namedtuple: Dict[str, Any], **kwargs: Any) -> Dict[str, Any]:
     """Replace fields in the namedtuple and return a new namedtuple."""
@@ -103,7 +103,7 @@ def replace_namedtuple(namedtuple: Dict[str, Any], **kwargs: Any) -> Dict[str, A
     else:
         new_defaults = namedtuple['defaults'].copy()
         new_defaults.update(kwargs)
-        return create_namedtuple(namedtuple['type_name'], namedtuple['field_name'], namedtuple['mutable'], new_defaults)
+        return mynamedtuple(namedtuple['type_name'], namedtuple['field_name'], namedtuple['mutable'], new_defaults)
 
 def set_attr_namedtuple(namedtuple: Dict[str, Any], name: str, value: Any) -> None:
     """Set an attribute if mutable."""
