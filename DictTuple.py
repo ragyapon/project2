@@ -6,8 +6,8 @@
 """
 
 class DictTuple:
-    def __init__(self,*args):
-        self.dt = args
+    def __init__(self,*dt):
+        self.dt = dt
     def __len__(self):
         key_counter = 0
         for key in self.dt:
@@ -81,9 +81,9 @@ class DictTuple:
         if isinstance(other, DictTuple):
             return DictTuple(*(self.dt + other.dt))
         elif isinstance(other,dict):
-            return DictTuple(*(self.dicts + [other]))
+            return DictTuple(*(self.dt + [other]))
         elif isinstance(self,dict):
-            return DictTuple(other,*self.dicts)
+            return DictTuple(other,*self.dt)
         raise TypeError ("Type is not supported")
     def __setattr__(self, key, value):
         pass
