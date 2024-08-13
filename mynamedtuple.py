@@ -80,6 +80,10 @@ def mynamedtuple(typename, fieldnames, mutable=False, defaults={}):
                 raise AttributeError(f'Invalid field name: {key}')
         return None
 
+    # Add an alias for replace to _replace
+    def _replace(self, **kwargs):
+        return self.replace(**kwargs)
+
     def __setattr__(self, name, value):
         if name in self._fields and not self._mutable and hasattr(self, name):
             raise AttributeError('Cannot modify immutable instance')
@@ -95,6 +99,7 @@ def mynamedtuple(typename, fieldnames, mutable=False, defaults={}):
         'asdict': asdict,
         'make': classmethod(make),
         'replace': replace,
+        '_replace': _replace,  # Alias added here
         '__setattr__': __setattr__,
         '_fields': fieldnames,
         '_mutable': mutable
