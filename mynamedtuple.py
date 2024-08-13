@@ -62,11 +62,11 @@ def namedtuple(type_name: str, field_name: List[str], mutable: bool = False, def
         'defaults': defaults
     }
 
-def repr_namedtuple(namedtuple: Dict[str, Any]) -> str:
+def __repr__(namedtuple: Dict[str, Any]) -> str:
     """Return a string representation of the namedtuple."""
     return f"NamedTuple(type_name={namedtuple['type_name']}, field_name={namedtuple['field_name']})"
 
-def get_item(namedtuple: Dict[str, Any], index: int) -> Any:
+def __getitem__(namedtuple: Dict[str, Any], index: int) -> Any:
     """Get an item by index."""
     if index == 0:
         return namedtuple['type_name']
@@ -74,7 +74,7 @@ def get_item(namedtuple: Dict[str, Any], index: int) -> Any:
         return namedtuple['field_name']
     raise IndexError("Index out of range")
 
-def eq_namedtuple(namedtuple1: Dict[str, Any], namedtuple2: Dict[str, Any]) -> bool:
+def __eq__(namedtuple1: Dict[str, Any], namedtuple2: Dict[str, Any]) -> bool:
     """Check if two namedtuples are equal."""
     return (namedtuple1['type_name'] == namedtuple2['type_name'] and
             namedtuple1['field_name'] == namedtuple2['field_name'])
