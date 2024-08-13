@@ -1,5 +1,7 @@
 class DictTuple:
     def __init__(self, *dt):
+        if not all(isinstance(d, dict) for d in dt):
+            raise TypeError
         self.dt = dt
 
     def __len__(self):
