@@ -71,14 +71,18 @@ def mynamedtuple(typename, fieldnames, mutable=False, defaults={}):
         return cls(*iterable)
 
     def replace(self, **kwargs):
+        for key in kwargs:
+            if key not in self._fields:
+                raise AttributeError(f"Invalid field name: {key}")
         if not self._mutable:
-            return self.__class__(**{f: getattr(self, f) for f in self._fields}, **kwargs)
-        for key, value in kwargs.items():
-            if key in self._fields:
+            # Create a new instance, overriding existing fields with those provided in kwargs
+            new_values = {f: getattr(self, f) for f in self._fields}
+            new_values.update(kwargs)
+            return self.__class__(**new_values)
+        else:
+            for key, value in kwargs.items():
                 setattr(self, key, value)
-            else:
-                raise AttributeError(f'Invalid field name: {key}')
-        return None
+            return None
 
     # Add an alias for replace to _replace
     def _replace(self, **kwargs):
