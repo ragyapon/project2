@@ -9,7 +9,7 @@ class DictTuple:
         return key_counter
 
     def __bool__(self):
-        return any(d for d in self.dt if d)
+        return len(self.dt) > 1
 
     def __repr__(self):
         return 'DictTuple({})'.format(', '.join(str(d) for d in self.dt))
