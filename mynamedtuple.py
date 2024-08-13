@@ -1,114 +1,107 @@
 import keyword
+from typing import List, Dict, Any, Union
 
-def mynamedtuple(typename, fieldnames, mutable=False, defaults={}):
+def mynamedtuple(typename: str, fieldnames: Union[str, List[str]], mutable=False, defaults: Dict[str, Any] = {}):
     # Validate typename
-    if not isinstance(typename, str) or not typename.isidentifier() or typename in keyword.kwlist:
-        raise SyntaxError(f"Invalid type name: '{typename}'")
+    if not typename.isidentifier() or typename in keyword.kwlist:
+        raise SyntaxError(f"Invalid type name: {typename}")
 
-    # Process fieldnames
+    # Normalize fieldnames
     if isinstance(fieldnames, str):
-        fieldnames = [fn.strip() for fn in fieldnames.replace(',', ' ').split()]
-    elif isinstance(fieldnames, list):
-        if not all(isinstance(fn, str) and fn.isidentifier() and fn not in keyword.kwlist for fn in fieldnames):
-            raise SyntaxError(f"Invalid field names in list: {fieldnames}")
-    else:
-        raise TypeError("Field names must be a string or a list of strings")
+        fieldnames = [f.strip() for f in fieldnames.replace(',', ' ').split()]
+
+    if not isinstance(fieldnames, list) or not all(isinstance(f, str) for f in fieldnames):
+        raise SyntaxError("Field names must be strings")
 
     # Remove duplicates while preserving order
     fieldnames = list(dict.fromkeys(fieldnames))
 
-    # Validate defaults
-    if not isinstance(defaults, dict):
-        raise TypeError("Defaults must be a dictionary")
-    if any(k not in fieldnames for k in defaults):
+    # Validate fieldnames
+    for field in fieldnames:
+        if not field.isidentifier() or field in keyword.kwlist:
+            raise SyntaxError(f"Invalid field name: {field}")
+
+    # Ensure defaults match fieldnames
+    if not all(key in fieldnames for key in defaults):
         raise SyntaxError("Defaults contain invalid field names")
 
-    # Define the methods for the class
-    def __init__(self, *args, **kwargs):
-        if len(args) + len(kwargs) > len(self._fields):
-            raise TypeError('Too many arguments provided')
-        for i, field in enumerate(self._fields):
-            if i < len(args):
-                setattr(self, field, args[i])
-            elif field in kwargs:
-                setattr(self, field, kwargs[field])
-            elif field in defaults:
-                setattr(self, field, defaults[field])
-            else:
-                raise TypeError(f'Missing required argument for field: {field}')
+    def init_method(self, *args, **kwargs):
+        if len(args) + len(kwargs) != len(fieldnames):
+            raise TypeError(f"{typename} expected {len(fieldnames)} arguments")
+        for name, value in zip(fieldnames, args):
+            setattr(self, name, value)
+        for name, value in kwargs.items():
+            if name not in fieldnames:
+                raise AttributeError(f"Invalid field name: {name}")
+            setattr(self, name, value)
 
-    def __repr__(self):
-        field_strs = ', '.join([f"{field}={{self.{field}!r}}" for field in self._fields])
-        return f"{typename}({field_strs.format(self=self)})"
+    def repr_method(self):
+        field_str = ",".join(f"{name}={getattr(self, name)!r}" for name in fieldnames)
+        return f"{typename}({field_str})"
 
-    def __str__(self):
-        return repr(self)
+    def asdict_method(self):
+        return {name: getattr(self, name) for name in fieldnames}
 
-    def get_methods(cls):
-        methods = {}
-        for field in cls._fields:
-            def make_getter(field):
-                return lambda self: getattr(self, field)
-            methods[f"get_{field}"] = make_getter(field)
-        return methods
+    def replace_method(self, **kwargs):
+        if not self._mutable:
+            new_values = {name: getattr(self, name) for name in fieldnames}
+            new_values.update(kwargs)
+            return self.__class__(**new_values)
+        else:
+            for name, value in kwargs.items():
+                if name not in fieldnames:
+                    raise AttributeError(f"Invalid field name: {name}")
+                setattr(self, name, value)
+            return None
 
-    def __getitem__(self, index):
-        if index < 0 or index >= len(self._fields):
-            raise IndexError('Index out of range')
-        return getattr(self, self._fields[index])
+    def get_method(field):
+        def method(self):
+            return getattr(self, field)
+        return method
 
-    def __eq__(self, other):
+    def getitem_method(self, index):
+        if not isinstance(index, int) or not (0 <= index < len(fieldnames)):
+            raise IndexError("Index out of range")
+        return getattr(self, fieldnames[index])
+
+    def eq_method(self, other):
         if not isinstance(other, self.__class__):
             return False
-        return all(getattr(self, f) == getattr(other, f) for f in self._fields)
+        return all(getattr(self, name) == getattr(other, name) for name in fieldnames)
 
-    def asdict(self):
-        return {field: getattr(self, field) for field in self._fields}
-
-    def make(cls, iterable):
-        if len(iterable) != len(cls._fields):
-            raise ValueError('Iterable length does not match field count')
+    def make_method(cls, iterable):
         return cls(*iterable)
 
-    def replace(self, **kwargs):
-        if not self._mutable:
-            return self.__class__(**{f: getattr(self, f) for f in self._fields}, **kwargs)
-        for key, value in kwargs.items():
-            if key in self._fields:
-                setattr(self, key, value)
-            else:
-                raise AttributeError(f'Invalid field name: {key}')
-        return None
+    # Dynamically build the class
+    class_body = {
+        "__init__": init_method,
+        "__repr__": repr_method,
+        "_asdict": asdict_method,
+        "_replace": replace_method,
+        "__getitem__": getitem_method,
+        "__eq__": eq_method,
+        "_make": classmethod(make_method),
+    }
 
-    # Add an alias for replace to _replace
-    def _replace(self, **kwargs):
-        return self.replace(**kwargs)
-
-    def __setattr__(self, name, value):
-        if name in self._fields and not self._mutable and hasattr(self, name):
-            raise AttributeError('Cannot modify immutable instance')
-        object.__setattr__(self, name, value)
+    # Add getter methods
+    for field in fieldnames:
+        class_body[f"get_{field}"] = get_method(field)
 
     # Create the class
-    cls = type(typename, (object,), {
-        '__init__': __init__,
-        '__repr__': __repr__,
-        '__str__': __str__,
-        '__getitem__': __getitem__,
-        '__eq__': __eq__,
-        'asdict': asdict,
-        'make': classmethod(make),
-        'replace': replace,
-        '_replace': _replace,  # Alias added here
-        '__setattr__': __setattr__,
-        '_fields': fieldnames,
-        '_mutable': mutable
-    })
+    class_dict = {
+        "__module__": __name__,
+        "_fields": fieldnames,
+        "_mutable": mutable,
+        **class_body,
+    }
+    cls = type(typename, (object,), class_dict)
 
-    # Add the get_methods dynamically
-    methods = get_methods(cls)
-    for name, method in methods.items():
-        setattr(cls, name, method)
+    # Define __setattr__ to handle immutability
+    def set_attr(self, name, value):
+        if name in fieldnames and not self._mutable:
+            raise AttributeError("Cannot modify immutable instance")
+        super(cls, self).__setattr__(name, value)
+
+    cls.__setattr__ = set_attr
 
     return cls
-
