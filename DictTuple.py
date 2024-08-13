@@ -24,25 +24,25 @@ class DictTuple:
     def __contains__(self,k):
         return k in self.dt
     def __getitem__(self, k):
-        for d in self.dt[-1:]:
+        for d in reversed(self.dt):
             if k in d:
                 return d[k]
             else:
                 return KeyError("Key not found")
     def __setitem__(self, k, v):
-        for d in self.dt[-1:]:
+        for d in reversed(self.dt):
             if k in d:
                 d[k] = v
                 return
-            self.dicts.append({k:v})
+            self.dt[-1][k]=v
     def __delitem__(self, k):
-        for d in self.dicts:
+        for d in self.dt:
             if k in d:
                 del d[k]
             else:
                 raise KeyError("Key not found in any dictionary")
     def __call__(self, k):
-        return [d[k] for d in self.dicts if k in d]
+        return [d[k] for d in self.dt if k in d]
 
     def __iter__(self):
         latest_index ={}
