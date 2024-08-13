@@ -80,7 +80,7 @@ def mynamedtuple(typename, fieldnames, mutable=False, defaults={}):
         return None
 
     def __setattr__(self, name, value):
-        if not self._mutable and name in self._fields:
+        if name in self._fields and not self._mutable and hasattr(self, name):
             raise AttributeError('Cannot modify immutable instance')
         object.__setattr__(self, name, value)
 
