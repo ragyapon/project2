@@ -31,11 +31,13 @@ class DictTuple:
         self.dt[-1][k] = v
 
     def __delitem__(self, k):
+        found = False
         for d in self.dt:
             if k in d:
                 del d[k]
-                return
-        raise KeyError("Key not found in any dictionary")
+                found = True
+        if not found:
+            raise KeyError("Key not found in any dictionary")
 
     def __call__(self, k):
         return [d[k] for d in self.dt if k in d]
