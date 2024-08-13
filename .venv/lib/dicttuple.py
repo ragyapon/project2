@@ -54,7 +54,29 @@ class DictTuple:
         for key in new_keys:
             yield key
     def __eq__(self, other):
-        pass
+        self_keys = set(self.__iter__())
+
+        if isinstance(other, dict):
+            other_keys = set(other.keys())
+            if self_keys != other_keys:
+                return False
+
+            for key in self_keys:
+                if self[key] != other[key]:
+                    return False
+            return True
+
+        elif isinstance(other, DictTuple):
+            other_keys = set(other.__iter__())
+            if self_keys != other_keys:
+                return False
+
+            for key in self_keys:
+                if self[key] != other[key]:
+                    return False
+            return True
+
+        return False
     def __add__(self, other):
         if isinstance(other, DictTuple):
             return DictTuple(*(self.dt + other.dt))

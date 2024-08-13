@@ -31,8 +31,11 @@
 """
 
 
-def mynamedtuple(type_name, field_name, mutable=False, defaults={}):
-    pass
+# def mynamedtuple(type_name, field_name, mutable=False, defaults={}):
+#     field_name = "def __init__{}"
+#     field_name.format(field_name=field_name)
+#
+
 class NamedTuple:
     def __init__(self,type_name,field_name,mutable, defaults):
         self.type_name = type_name
@@ -77,9 +80,3 @@ class NamedTuple:
 
 
 
-
-
-
-
-
-obj = NamedTuple("h")
