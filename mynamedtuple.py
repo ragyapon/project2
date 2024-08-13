@@ -40,10 +40,13 @@ def mynamedtuple(typename, fieldnames, mutable=False, defaults={}):
     def __str__(self):
         return repr(self)
 
-    def get_methods(self):
+    @classmethod
+    def get_methods(cls):
         methods = {}
-        for field in self._fields:
-            methods[f"get_{field}"] = lambda self, field=field: getattr(self, field)
+        for field in cls._fields:
+            def make_getter(field):
+                return lambda self: getattr(self, field)
+            methods[f"get_{field}"] = make_getter(field)
         return methods
 
     def __getitem__(self, index):
@@ -59,6 +62,7 @@ def mynamedtuple(typename, fieldnames, mutable=False, defaults={}):
     def asdict(self):
         return {field: getattr(self, field) for field in self._fields}
 
+    @classmethod
     def make(cls, iterable):
         if len(iterable) != len(cls._fields):
             raise ValueError('Iterable length does not match field count')
