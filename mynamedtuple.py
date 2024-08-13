@@ -51,7 +51,7 @@
  #        super().__setattr__(name, value)
 from typing import List, Dict, Any, Union
 
-def namedtuple(type_name: str, field_name: List[str], mutable: bool = False, defaults: Dict[str, Any] = None) -> Dict[str, Any]:
+def mynamedtuple(type_name: str, field_name: List[str], mutable: bool = False, defaults: Dict[str, Any] = None) -> Dict[str, Any]:
     """Create a namedtuple-like dictionary."""
     if defaults is None:
         defaults = {}
