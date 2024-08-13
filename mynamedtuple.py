@@ -12,7 +12,7 @@ def mynamedtuple(typename, fieldnames, mutable=False, defaults={}):
 
     # Validate fieldnames
     for field in fieldnames:
-        if not field.isidentifier() or field in keyword.kwlist:
+        if not isinstance(field, str) or not field.isidentifier() or field in keyword.kwlist:
             raise SyntaxError(f"Invalid field name: {field}")
 
     # Ensure defaults match fieldnames
@@ -51,6 +51,8 @@ def mynamedtuple(typename, fieldnames, mutable=False, defaults={}):
     class_str += f"{indent*3}return self.__class__(**new_values)\n"
     class_str += f"{indent*2}else:\n"
     class_str += f"{indent*3}for key, value in kwargs.items():\n"
+    class_str += f"{indent*4}if key not in self._fields:\n"
+    class_str += f"{indent*5}raise AttributeError('Invalid field name')\n"
     class_str += f"{indent*4}setattr(self, key, value)\n"
     class_str += f"{indent*3}return None\n\n"
 
@@ -81,6 +83,5 @@ def mynamedtuple(typename, fieldnames, mutable=False, defaults={}):
     namespace = {}
     exec(class_str, namespace)
     return namespace[typename]
-
 
 
