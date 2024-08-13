@@ -21,7 +21,7 @@ class DictTuple:
     def __repr__(self):
         return 'DictTuple({})'.format(','.join(str(d) for d in self.dt))
 
-    def __contains__(self):
+    def __contains__(self,k):
         return k in self.dt
     def __getitem__(self, k):
         for d in self.dt[-1:]:
