@@ -1,88 +1,89 @@
 import keyword
 
-
-def mynamedtuple(typename, fields, defaults=None, mutable=False):
-    # Validate typename
+def mynamedtuple(typename, fieldnames, mutable=False, defaults={}):
     if not typename.isidentifier() or typename in keyword.kwlist:
-        raise SyntaxError(f"Invalid type name: '{typename}'")
+        raise SyntaxError(f"Invalid type name")
 
-    # Validate and process fields
-    if isinstance(fields, str):
-        fields = fields.replace(',', ' ').split()
-    fields = list(dict.fromkeys(fields))  # Remove duplicates
+    if isinstance(fieldnames, str):
+        fieldnames = [fn.strip() for fn in fieldnames.replace(',', ' ').split()]
+    if not all(fn.isidentifier() and fn not in keyword.kwlist for fn in fieldnames):
+        raise SyntaxError(f"Invalid field names")
 
-    if any(not field.isidentifier() or field in keyword.kwlist for field in fields):
-        raise SyntaxError(f"Invalid field names in: {fields}")
+    fieldnames = list(dict.fromkeys(fieldnames))
 
-    # Validate defaults
-    if defaults is None:
-        defaults = {}
-    else:
-        invalid_defaults = set(defaults) - set(fields)
-        if invalid_defaults:
-            raise SyntaxError(f"Invalid defaults for fields: {invalid_defaults}")
+    if not isinstance(defaults, dict):
+        raise TypeError("Type Error")
+    if any(k not in fieldnames for k in defaults):
+        raise SyntaxError("Syntax error")
+    def init(self, *args, **kwargs):
+        if len(args) + len(kwargs) > len(self._fields):
+            raise TypeError('Too many arguments provided')
+        for i, field in enumerate(self._fields):
+            if i < len(args):
+                setattr(self, field, args[i])
+            elif field in kwargs:
+                setattr(self, field, kwargs[field])
+            elif field in defaults:
+                setattr(self, field, defaults[field])
+            else:
+                raise TypeError(f'Missing required argument for field: {field}')
 
-    # Generate class string
-    indent = " " * 4  # Four spaces for indentation
-    class_str = f"class {typename}:\n"
-    class_str += f"{indent}_fields = {fields}\n"
-    class_str += f"{indent}_mutable = {mutable}\n\n"
+    def repr(self):
+        return f"{typename}(" + ", ".join(f"{f}={{self.{f}!r}}" for f in self._fields) + ")"
 
-    # Generate __init__ method
-    params = ", ".join([f"{f}={defaults[f]}" if f in defaults else f for f in fields])
-    init_body = "\n".join([f"{indent * 2}self.{f} = {f}" for f in fields])
-    class_str += f"{indent}def __init__(self, {params}):\n{init_body}\n\n"
+    def str(self):
+        return repr(self)
 
-    # Generate __repr__ method
-    repr_body = ", ".join([f"{f}={{self.{f}!r}}" for f in fields])
-    class_str += f"{indent}def __repr__(self):\n"
-    class_str += f"{indent * 2}return f'{typename}({repr_body})'\n\n"
+    def get_methods(self):
+        methods = {}
+        for field in self._fields:
+            methods[f"get_{field}"] = lambda self,: getattr(self, field)
+        return methods
 
-    # Generate accessors
-    for field in fields:
-        class_str += f"{indent}def get_{field}(self):\n"
-        class_str += f"{indent * 2}return self.{field}\n\n"
+    def getitem(self, index):
+        if index < 0 or index >= len(self._fields):
+            raise IndexError('Index out of range')
+        return getattr(self, self._fields[index])
 
-    # Generate __eq__ method
-    eq_body = " and ".join([f"self.{f} == other.{f}" for f in fields])
-    class_str += f"{indent}def __eq__(self, other):\n"
-    class_str += f"{indent * 2}return isinstance(other, {typename}) and {eq_body}\n\n"
+    def eq(self, other):
+        if not isinstance(other, self.__class__):
+            return False
+        return all(getattr(self, f) == getattr(other, f) for f in self._fields)
 
-    # Generate __getitem__ method
-    getitem_body = "\n".join([f"{indent * 2}if index == {i}: return self.{f}" for i, f in enumerate(fields)])
-    class_str += f"{indent}def __getitem__(self, index):\n{getitem_body}\n"
-    class_str += f"{indent * 2}raise IndexError('Index out of range')\n\n"
+    def asdict(self):
+        return {field: getattr(self, field) for field in self._fields}
 
-    # Generate asdict method
-    asdict_body = ", ".join([f"'{f}': self.{f}" for f in fields])
-    class_str += f"{indent}def asdict(self):\n"
-    class_str += f"{indent * 2}return {{{asdict_body}}}\n\n"
+    def make(cls, iterable):
+        if len(iterable) != len(cls._fields):
+            raise ValueError('Iterable length does not match field count')
+        return cls(*iterable)
 
-    # Generate make method
-    make_body = ", ".join([f"iterable[{i}]" for i, _ in enumerate(fields)])
-    class_str += f"{indent}@classmethod\n"
-    class_str += f"{indent}def make(cls, iterable):\n"
-    class_str += f"{indent * 2}return cls({make_body})\n\n"
+    def replace(self, **kwargs):
+        if not self._mutable:
+            return self.__class__(**{f: getattr(self, f) for f in self._fields}, **kwargs)
+        for key, value in kwargs.items():
+            if key in self._fields:
+                setattr(self, key, value)
+            else:
+                raise AttributeError(f'Invalid field name: {key}')
+        return None
 
-    # Generate replace method
-    replace_body = "\n".join([f"{indent * 2}{f} = kargs.get('{f}', self.{f})" for f in fields])
-    replace_mutable = "\n".join([f"{indent * 2}self.{f} = {f}" for f in fields])
-    replace_immutable = ", ".join([f"{f}={f}" for f in fields])
+    def setattr(self, name, value):
+        if not self._mutable and name in self._fields:
+            raise AttributeError('Cannot modify immutable instance')
+        super().__setattr__(name, value)
 
-    class_str += f"{indent}def replace(self, **kargs):\n"
-    class_str += f"{indent * 2}if self._mutable:\n{replace_body}\n{replace_mutable}\n"
-    class_str += f"{indent * 2}else:\n{replace_body}\n"
-    class_str += f"{indent * 3}return {typename}({replace_immutable})\n\n"
-
-    # Generate setattr method
-    class_str += f"{indent}def __setattr__(self, name, value):\n"
-    class_str += f"{indent * 2}if not self._mutable and hasattr(self, name):\n"
-    class_str += f"{indent * 3}raise AttributeError(f'Cannot modify immutable instance')\n"
-    class_str += f"{indent * 2}super().__setattr__(name, value)\n"
-
-    # Compile the class and return it
-    namespace = {}
-    exec(class_str, namespace)
-    return namespace[typename]
-
-
+    return type(typename, (object,), {
+        '__init__': init,
+        '__repr__': repr,
+        '__str__': str,
+        '__getitem__': getitem,
+        '__eq__': eq,
+        'asdict': asdict,
+        'make': classmethod(make),
+        'replace': replace,
+        '__setattr__': setattr,
+        '_fields': fieldnames,
+        '_mutable': mutable,
+        **get_methods()
+    })
