@@ -44,14 +44,15 @@ class DictTuple:
 
     def __iter__(self):
         latest_index = {}
-        for index, d in enumerate(self.dt):
+        for index in reversed(range(len(self.dt))):
+            d = self.dt[index]
             if not isinstance(d, dict):
-                raise TypeError("wrong type")
+                raise TypeError("All items must be dictionaries")
             for key in d:
-                latest_index[key] = index
-        new_keys = sorted(latest_index.keys())
-        for key in new_keys:
-            yield key
+                if key not in latest_index:
+                    latest_index[key] = index
+
+        yield from latest_index.keys()
 
 
     def __eq__(self, other):
