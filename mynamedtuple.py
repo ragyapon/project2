@@ -2,14 +2,17 @@ import keyword
 
 def mynamedtuple(typename, fieldnames, mutable=False, defaults={}):
     # Validate typename
-    if not typename.isidentifier() or typename in keyword.kwlist:
+    if not isinstance(typename, str) or not typename.isidentifier() or typename in keyword.kwlist:
         raise SyntaxError(f"Invalid type name: '{typename}'")
 
     # Process fieldnames
     if isinstance(fieldnames, str):
         fieldnames = [fn.strip() for fn in fieldnames.replace(',', ' ').split()]
-    if not all(fn.isidentifier() and fn not in keyword.kwlist for fn in fieldnames):
-        raise SyntaxError(f"Invalid field names: {fieldnames}")
+    elif isinstance(fieldnames, list):
+        if not all(isinstance(fn, str) and fn.isidentifier() and fn not in keyword.kwlist for fn in fieldnames):
+            raise SyntaxError(f"Invalid field names in list: {fieldnames}")
+    else:
+        raise TypeError("Field names must be a string or a list of strings")
 
     # Remove duplicates while preserving order
     fieldnames = list(dict.fromkeys(fieldnames))
@@ -21,7 +24,7 @@ def mynamedtuple(typename, fieldnames, mutable=False, defaults={}):
         raise SyntaxError("Defaults contain invalid field names")
 
     # Define the methods for the class
-    def init(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         if len(args) + len(kwargs) > len(self._fields):
             raise TypeError('Too many arguments provided')
         for i, field in enumerate(self._fields):
@@ -79,11 +82,11 @@ def mynamedtuple(typename, fieldnames, mutable=False, defaults={}):
     def __setattr__(self, name, value):
         if not self._mutable and name in self._fields:
             raise AttributeError('Cannot modify immutable instance')
-        super().__setattr__(name, value)
+        object.__setattr__(self, name, value)
 
     # Create the class
     cls = type(typename, (object,), {
-        '__init__': init,
+        '__init__': __init__,
         '__repr__': __repr__,
         '__str__': __str__,
         '__getitem__': __getitem__,
