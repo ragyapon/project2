@@ -40,7 +40,6 @@ def mynamedtuple(typename, fieldnames, mutable=False, defaults={}):
     def __str__(self):
         return repr(self)
 
-    @classmethod
     def get_methods(cls):
         methods = {}
         for field in cls._fields:
@@ -62,7 +61,6 @@ def mynamedtuple(typename, fieldnames, mutable=False, defaults={}):
     def asdict(self):
         return {field: getattr(self, field) for field in self._fields}
 
-    @classmethod
     def make(cls, iterable):
         if len(iterable) != len(cls._fields):
             raise ValueError('Iterable length does not match field count')
@@ -84,7 +82,7 @@ def mynamedtuple(typename, fieldnames, mutable=False, defaults={}):
         super().__setattr__(name, value)
 
     # Create the class
-    return type(typename, (object,), {
+    cls = type(typename, (object,), {
         '__init__': init,
         '__repr__': __repr__,
         '__str__': __str__,
@@ -95,6 +93,12 @@ def mynamedtuple(typename, fieldnames, mutable=False, defaults={}):
         'replace': replace,
         '__setattr__': __setattr__,
         '_fields': fieldnames,
-        '_mutable': mutable,
-        **get_methods()
+        '_mutable': mutable
     })
+
+    # Add the get_methods dynamically
+    methods = get_methods(cls)
+    for name, method in methods.items():
+        setattr(cls, name, method)
+
+    return cls
