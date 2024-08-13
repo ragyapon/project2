@@ -24,6 +24,8 @@ class DictTuple:
         raise KeyError("Key not found")
 
     def __setitem__(self, k, v):
+        if not self.dt:
+            raise IndexError("No dictionaries available to set the key-value pair")
         for d in reversed(self.dt):
             if k in d:
                 d[k] = v
