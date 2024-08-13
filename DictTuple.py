@@ -3,10 +3,10 @@ class DictTuple:
         self.dt = dt
 
     def __len__(self):
-        key_counter = 0
-        for key in self.dt:
-            key_counter += len(key.keys())
-        return key_counter
+        unique_keys = set()
+        for d in self.dt:
+            unique_keys.update(d.keys())
+        return len(unique_keys)
 
     def __bool__(self):
         return len(self.dt) > 1
