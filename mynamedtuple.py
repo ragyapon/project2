@@ -1,20 +1,26 @@
 import keyword
 
 def mynamedtuple(typename, fieldnames, mutable=False, defaults={}):
+    # Validate typename
     if not typename.isidentifier() or typename in keyword.kwlist:
-        raise SyntaxError(f"Invalid type name")
+        raise SyntaxError(f"Invalid type name: '{typename}'")
 
+    # Process fieldnames
     if isinstance(fieldnames, str):
         fieldnames = [fn.strip() for fn in fieldnames.replace(',', ' ').split()]
     if not all(fn.isidentifier() and fn not in keyword.kwlist for fn in fieldnames):
-        raise SyntaxError(f"Invalid field names")
+        raise SyntaxError(f"Invalid field names: {fieldnames}")
 
+    # Remove duplicates while preserving order
     fieldnames = list(dict.fromkeys(fieldnames))
 
+    # Validate defaults
     if not isinstance(defaults, dict):
-        raise TypeError("Type Error")
+        raise TypeError("Defaults must be a dictionary")
     if any(k not in fieldnames for k in defaults):
-        raise SyntaxError("Syntax error")
+        raise SyntaxError("Defaults contain invalid field names")
+
+    # Define the methods for the class
     def init(self, *args, **kwargs):
         if len(args) + len(kwargs) > len(self._fields):
             raise TypeError('Too many arguments provided')
@@ -28,24 +34,24 @@ def mynamedtuple(typename, fieldnames, mutable=False, defaults={}):
             else:
                 raise TypeError(f'Missing required argument for field: {field}')
 
-    def repr(self):
+    def __repr__(self):
         return f"{typename}(" + ", ".join(f"{f}={{self.{f}!r}}" for f in self._fields) + ")"
 
-    def str(self):
+    def __str__(self):
         return repr(self)
 
     def get_methods(self):
         methods = {}
         for field in self._fields:
-            methods[f"get_{field}"] = lambda self,: getattr(self, field)
+            methods[f"get_{field}"] = lambda self, field=field: getattr(self, field)
         return methods
 
-    def getitem(self, index):
+    def __getitem__(self, index):
         if index < 0 or index >= len(self._fields):
             raise IndexError('Index out of range')
         return getattr(self, self._fields[index])
 
-    def eq(self, other):
+    def __eq__(self, other):
         if not isinstance(other, self.__class__):
             return False
         return all(getattr(self, f) == getattr(other, f) for f in self._fields)
@@ -68,21 +74,22 @@ def mynamedtuple(typename, fieldnames, mutable=False, defaults={}):
                 raise AttributeError(f'Invalid field name: {key}')
         return None
 
-    def setattr(self, name, value):
+    def __setattr__(self, name, value):
         if not self._mutable and name in self._fields:
             raise AttributeError('Cannot modify immutable instance')
         super().__setattr__(name, value)
 
+    # Create the class
     return type(typename, (object,), {
         '__init__': init,
-        '__repr__': repr,
-        '__str__': str,
-        '__getitem__': getitem,
-        '__eq__': eq,
+        '__repr__': __repr__,
+        '__str__': __str__,
+        '__getitem__': __getitem__,
+        '__eq__': __eq__,
         'asdict': asdict,
         'make': classmethod(make),
         'replace': replace,
-        '__setattr__': setattr,
+        '__setattr__': __setattr__,
         '_fields': fieldnames,
         '_mutable': mutable,
         **get_methods()
